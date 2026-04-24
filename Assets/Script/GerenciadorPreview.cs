@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GerenciadorPreview : MonoBehaviour
 {
@@ -32,40 +33,41 @@ public class GerenciadorPreview : MonoBehaviour
     {
         if (!escolheuCabelo || !escolheuPele || !escolheuUniforme) return; 
 
-        // NOVA LÓGICA: Cabelo(9) -> Pele(3) -> Uniforme(1)
-        // Removido o "+ 1" para que a primeira combinação seja o índice 0
         int contaCabelo = nCabelo * 9;
         int contaPele = nPele * 3;
         int indiceFinal = contaCabelo + contaPele + nUniforme;
 
-        // Esse log vai mostrar exatamente o que está acontecendo no Console
-        Debug.Log($"SOMA: (Cabelo:{nCabelo} * 9) + (Pele:{nPele} * 3) + Uniforme:{nUniforme} = ÍNDICE: {indiceFinal}");
-        
-        // Agora usamos o número para o nome do arquivo (ex: Personagem1, Personagem2...)
-        // Como seus arquivos começam no 1, aqui mantemos o +1 apenas para o NOME da busca
         string nomeProcurado = "Personagem" + (indiceFinal + 1);
-        Debug.Log("Buscando Sprite com nome: " + nomeProcurado);
-
+        
         if (todasAsCombinacoes.Length == 0) return;
 
-        bool encontrou = false;
         foreach (Sprite s in todasAsCombinacoes)
         {
             if (s != null && s.name.StartsWith(nomeProcurado))
             {
                 displayPersonagem.sprite = s;
-                
                 Color c = displayPersonagem.color;
                 c.a = 1f; 
                 displayPersonagem.color = c;
-                encontrou = true;
                 break;
             }
         }
+    }
 
-        if (!encontrou)
+    // FUNÇÃO PARA O BOTÃO CONFIRMAR
+    public void ConfirmarEscolha()
+    {
+        if (displayPersonagem.sprite != null)
         {
-            Debug.LogWarning($"Não foi possível encontrar o arquivo: {nomeProcurado}");
+            // Salva na "nuvem" estática
+            DadosDoJogador.PersonagemSelecionado = displayPersonagem.sprite;
+            
+            // Carrega a cena do Hub (certifique-se que o nome na Build Settings seja "Hub")
+            SceneManager.LoadScene("Hub");
+        }
+        else
+        {
+            Debug.LogWarning("Selecione todas as partes antes de confirmar!");
         }
     }
 }
