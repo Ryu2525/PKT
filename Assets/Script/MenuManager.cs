@@ -17,6 +17,11 @@ public class MenuManager : MonoBehaviour
         SceneManager.LoadScene("Home");
     }
 
+    public void IrParaHub()
+    {
+        SceneManager.LoadScene("Hub");
+    }
+
     public void SairDoJogo()
     {
         Debug.Log("Saindo do jogo...");
