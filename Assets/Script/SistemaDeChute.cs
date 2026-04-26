@@ -14,42 +14,34 @@ public class SistemaDeChute : MonoBehaviour
     private int direcaoForca = 1;
 
     [Header("Configuração de Direção")]
-    public GameObject setaDirecao; // Arraste o PIVOT aqui
+    public GameObject setaDirecao; 
     public float velocidadeSeta = 100f;
+    public float anguloMaximo = 80f; // Evita que chute totalmente para trás
     private float anguloSeta = 0f;
     private int direcaoSeta = 1;
 
     [Header("Referência da Bola")]
     public Rigidbody2D rbBola;
-    public float multiplicadorForca = 20f;
+    public float multiplicadorForca = 15f;
 
     void Start()
     {
-        if(barraForca) barraForca.gameObject.SetActive(false);
-        if(setaDirecao) setaDirecao.SetActive(false);
+        if (barraForca) barraForca.gameObject.SetActive(false);
+        if (setaDirecao) setaDirecao.SetActive(false);
+        
+        // Garante que a bola não saia rolando sozinha no início
+        if (rbBola) rbBola.simulated = true; 
     }
 
-    // Esta função será chamada pelo Player Input Component 
-    // Certifique-se de que a Action se chama "Space" ou "Jump" (ou o nome que você deu)
-    public void OnJump(InputValue value)
-    {
-        // No New Input System, verificamos se a tecla foi pressionada
-        if (value.isPressed)
-        {
-            AvancarEstado();
-        }
-    }
-
-    // Caso você não queira configurar o Player Input por eventos, 
-    // pode usar esta linha dentro do Update para detectar o espaço:
     void Update()
     {
-        // Alternativa via código direto (New Input System):
+        // Detecta o espaço (New Input System)
         if (Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             AvancarEstado();
         }
 
+        // Processamento visual dos estados
         if (estadoAtual == EstadoChute.EscolhendoForca)
         {
             OscilarForca();
@@ -62,20 +54,24 @@ public class SistemaDeChute : MonoBehaviour
 
     void AvancarEstado()
     {
-        if (estadoAtual == EstadoChute.Parado)
+        switch (estadoAtual)
         {
-            estadoAtual = EstadoChute.EscolhendoForca;
-            barraForca.gameObject.SetActive(true);
-            valorForca = 0;
-        }
-        else if (estadoAtual == EstadoChute.EscolhendoForca)
-        {
-            estadoAtual = EstadoChute.EscolhendoDirecao;
-            setaDirecao.SetActive(true);
-        }
-        else if (estadoAtual == EstadoChute.EscolhendoDirecao)
-        {
-            ExecutarChute();
+            case EstadoChute.Parado:
+                estadoAtual = EstadoChute.EscolhendoForca;
+                barraForca.gameObject.SetActive(true);
+                valorForca = 0;
+                break;
+
+            case EstadoChute.EscolhendoForca:
+                estadoAtual = EstadoChute.EscolhendoDirecao;
+                setaDirecao.SetActive(true);
+                // Resetar o ângulo para começar do centro
+                anguloSeta = 0; 
+                break;
+
+            case EstadoChute.EscolhendoDirecao:
+                ExecutarChute();
+                break;
         }
     }
 
@@ -90,17 +86,30 @@ public class SistemaDeChute : MonoBehaviour
     void OscilarDirecao()
     {
         anguloSeta += Time.deltaTime * velocidadeSeta * direcaoSeta;
-        if (anguloSeta >= 90f) direcaoSeta = -1;
-        if (anguloSeta <= -90f) direcaoSeta = 1;
+        
+        // Limita o arco da seta para não fazer 360º
+        if (anguloSeta >= anguloMaximo) direcaoSeta = -1;
+        if (anguloSeta <= -anguloMaximo) direcaoSeta = 1;
+        
         setaDirecao.transform.localRotation = Quaternion.Euler(0, 0, anguloSeta);
     }
 
     void ExecutarChute()
     {
-        // Pega a direção "frente" da seta (eixo Y local do Pivot)
-        Vector2 direcaoFinal = setaDirecao.transform.up;
+        // 1. IMPORTANTE: Zera completamente a física antes de aplicar nova força
+        rbBola.linearVelocity = Vector2.zero; 
+        rbBola.angularVelocity = 0f;
+
+        // 2. CÁLCULO DE DIREÇÃO:
+        // Se a sua seta no Unity aponta para cima no desenho, usamos .up
+        // Se ela aponta para a direita, usamos .right
+        Vector2 direcaoFinal = setaDirecao.transform.up; 
+        
+        // 3. APLICAÇÃO DO IMPULSO
+        // Multiplicamos pela força escolhida (valorForca vai de 0 a 1)
         rbBola.AddForce(direcaoFinal * (valorForca * multiplicadorForca), ForceMode2D.Impulse);
 
+        // Limpeza de UI e reset de estado
         barraForca.gameObject.SetActive(false);
         setaDirecao.SetActive(false);
         estadoAtual = EstadoChute.Parado;
