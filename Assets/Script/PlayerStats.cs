@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement; // Adicionado para carregar cenas
 
 public class PlayerStats : MonoBehaviour
 {
@@ -17,33 +18,37 @@ public class PlayerStats : MonoBehaviour
     public TextMeshProUGUI textoVitorias;
     public TextMeshProUGUI textoPartidasContador;
 
-    // Dados de Carreira
     private int dinheiroAtual = 50;
     private int nivelAtual = 1;
     private int vitoriasNoCiclo = 0;
-    private int partidasJogadas = 0;
+    private int partidasJogadas = 0; 
     private string timeAtual = "União Vila Nova FC";
-
-    // NOVO: Controle de Rebaixamento
     private int ciclosFracassados = 0; 
 
-    // Valores das barras
     private float nivelFelicidade = 0.5f;
     private float nivelFama = 0.5f;
     private float nivelMoralTreinador = 0.5f;
     private float nivelMoralApostador = 0.5f;
 
-    void Start()
+    void Start() { AtualizarTudo(); }
+
+    // Chamado pelo botão "CONFIRMAR" no HUB
+    public void JogarProximaPartida()
     {
-        AtualizarTudo();
+        string dificuldade = (nivelAtual == 1) ? "Facil" : (nivelAtual == 2) ? "Medio" : "Dificil";
+        int rodada = partidasJogadas + 1;
+        
+        // Certifique-se de que suas cenas no Build Settings tenham esses nomes exatos
+        SceneManager.LoadScene("Jogo_" + dificuldade + "_" + rodada);
     }
 
     public void FinalizarPartida(bool venceu)
     {
-        partidasJogadas++;
-        
         if (venceu) vitoriasNoCiclo++;
+        
+        partidasJogadas++;
 
+        // Se terminou a 3ª partida (índice 2 que virou 3)
         if (partidasJogadas >= 3)
         {
             ConcluirCicloDePartidas();
@@ -57,20 +62,14 @@ public class PlayerStats : MonoBehaviour
         if (vitoriasNoCiclo >= 2)
         {
             SubirDeNivel();
-            ciclosFracassados = 0; // Resetamos as falhas pois ele teve sucesso
+            ciclosFracassados = 0;
         }
         else
         {
             ciclosFracassados++;
-            Debug.Log("Falha acumulada: " + ciclosFracassados);
-
-            if (ciclosFracassados >= 2)
-            {
-                ProcessarFracassoCritico();
-            }
+            if (ciclosFracassados >= 2) ProcessarFracassoCritico();
         }
 
-        // Reseta para a próxima sequência de 3 jogos
         partidasJogadas = 0;
         vitoriasNoCiclo = 0;
     }
@@ -81,30 +80,22 @@ public class PlayerStats : MonoBehaviour
         {
             nivelAtual++;
             AtualizarDadosDoTime();
-            Debug.Log("Subiu de Nível! Agora no Nível: " + nivelAtual);
         }
     }
 
     void ProcessarFracassoCritico()
     {
-        if (nivelAtual == 1)
-        {
-            Debug.LogError("GAME OVER: Você foi demitido do time amador!");
-            // Aqui você pode carregar uma cena de Game Over ou resetar o jogo
-            // SceneManager.LoadScene("GameOver"); 
-        }
+        if (nivelAtual == 1) SceneManager.LoadScene("GameOver"); 
         else
         {
             nivelAtual--;
-            ciclosFracassados = 0; // Reseta para dar chance no nível inferior
+            ciclosFracassados = 0;
             AtualizarDadosDoTime();
-            Debug.Log("REBAIXADO! Você voltou para o Nível: " + nivelAtual);
         }
     }
 
     void AtualizarDadosDoTime()
     {
-        // Centralizei a troca de nomes para facilitar
         if (nivelAtual == 1) timeAtual = "União Vila Nova FC";
         else if (nivelAtual == 2) timeAtual = "Atlético Vale Verde";
         else if (nivelAtual == 3) timeAtual = "Esporte Clube Aurora Paulista";
@@ -116,7 +107,10 @@ public class PlayerStats : MonoBehaviour
         if (textoNomeTime != null) textoNomeTime.text = timeAtual;
         if (textoNivel != null) textoNivel.text = "NÍVEL: " + nivelAtual;
         if (textoVitorias != null) textoVitorias.text = "Vitorias: " + vitoriasNoCiclo;
-        if (textoPartidasContador != null) textoPartidasContador.text = partidasJogadas + "/3";
+        
+        // EXIBIÇÃO: Mostra 1/3, 2/3 ou 3/3 para o jogador
+        if (textoPartidasContador != null) 
+            textoPartidasContador.text = (partidasJogadas + 1) + "/3";
 
         if (Felicidade != null) Felicidade.fillAmount = nivelFelicidade;
         if (Fama != null) Fama.fillAmount = nivelFama;

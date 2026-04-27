@@ -1,10 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.InputSystem;
 
 public class SistemaDeChute : MonoBehaviour
 {
     public enum EstadoChute { Parado, EscolhendoForca, EscolhendoDirecao }
+    
+    [Header("Estado Atual")]
     public EstadoChute estadoAtual = EstadoChute.Parado;
 
     [Header("Configuração de Força")]
@@ -16,7 +19,7 @@ public class SistemaDeChute : MonoBehaviour
     [Header("Configuração de Direção")]
     public GameObject setaDirecao; 
     public float velocidadeSeta = 100f;
-    public float anguloMaximo = 80f; // Evita que chute totalmente para trás
+    public float anguloMaximo = 80f;
     private float anguloSeta = 0f;
     private int direcaoSeta = 1;
 
@@ -24,24 +27,29 @@ public class SistemaDeChute : MonoBehaviour
     public Rigidbody2D rbBola;
     public float multiplicadorForca = 15f;
 
+    [Header("Regras e UI")]
+    public int tentativasRestantes = 3;
+    public TextMeshProUGUI textoTentativas;
+    public Animator meuAnimator;
+
     void Start()
     {
-        if (barraForca) barraForca.gameObject.SetActive(false);
-        if (setaDirecao) setaDirecao.SetActive(false);
+        // Inicializa a UI
+        if (barraForca != null) barraForca.gameObject.SetActive(false);
+        if (setaDirecao != null) setaDirecao.SetActive(false);
         
-        // Garante que a bola não saia rolando sozinha no início
-        if (rbBola) rbBola.simulated = true; 
+        AtualizarUITentativas();
     }
 
     void Update()
     {
-        // Detecta o espaço (New Input System)
+        // Detecta o clique ou espaço
         if (Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             AvancarEstado();
         }
 
-        // Processamento visual dos estados
+        // Lógica de oscilação baseada no estado
         if (estadoAtual == EstadoChute.EscolhendoForca)
         {
             OscilarForca();
@@ -57,16 +65,17 @@ public class SistemaDeChute : MonoBehaviour
         switch (estadoAtual)
         {
             case EstadoChute.Parado:
-                estadoAtual = EstadoChute.EscolhendoForca;
-                barraForca.gameObject.SetActive(true);
-                valorForca = 0;
+                if (tentativasRestantes > 0)
+                {
+                    estadoAtual = EstadoChute.EscolhendoForca;
+                    if (barraForca != null) barraForca.gameObject.SetActive(true);
+                    valorForca = 0;
+                }
                 break;
 
             case EstadoChute.EscolhendoForca:
                 estadoAtual = EstadoChute.EscolhendoDirecao;
-                setaDirecao.SetActive(true);
-                // Resetar o ângulo para começar do centro
-                anguloSeta = 0; 
+                if (setaDirecao != null) setaDirecao.SetActive(true);
                 break;
 
             case EstadoChute.EscolhendoDirecao:
@@ -80,38 +89,69 @@ public class SistemaDeChute : MonoBehaviour
         valorForca += Time.deltaTime * velocidadeBarra * direcaoForca;
         if (valorForca >= 1f) { valorForca = 1f; direcaoForca = -1; }
         if (valorForca <= 0f) { valorForca = 0f; direcaoForca = 1; }
-        barraForca.value = valorForca;
+        
+        if (barraForca != null) barraForca.value = valorForca;
     }
 
     void OscilarDirecao()
     {
         anguloSeta += Time.deltaTime * velocidadeSeta * direcaoSeta;
-        
-        // Limita o arco da seta para não fazer 360º
         if (anguloSeta >= anguloMaximo) direcaoSeta = -1;
         if (anguloSeta <= -anguloMaximo) direcaoSeta = 1;
-        
-        setaDirecao.transform.localRotation = Quaternion.Euler(0, 0, anguloSeta);
+
+        if (setaDirecao != null)
+        {
+            setaDirecao.transform.localRotation = Quaternion.Euler(0, 0, anguloSeta);
+        }
     }
 
     void ExecutarChute()
     {
-        // 1. IMPORTANTE: Zera completamente a física antes de aplicar nova força
-        rbBola.linearVelocity = Vector2.zero; 
-        rbBola.angularVelocity = 0f;
+        tentativasRestantes--;
+        AtualizarUITentativas();
 
-        // 2. CÁLCULO DE DIREÇÃO:
-        // Se a sua seta no Unity aponta para cima no desenho, usamos .up
-        // Se ela aponta para a direita, usamos .right
-        Vector2 direcaoFinal = setaDirecao.transform.up; 
-        
-        // 3. APLICAÇÃO DO IMPULSO
-        // Multiplicamos pela força escolhida (valorForca vai de 0 a 1)
-        rbBola.AddForce(direcaoFinal * (valorForca * multiplicadorForca), ForceMode2D.Impulse);
+        // 1. Aciona a animação do jogador
+        if (meuAnimator != null) 
+        {
+            meuAnimator.SetTrigger("DispararChute");
+        }
 
-        // Limpeza de UI e reset de estado
-        barraForca.gameObject.SetActive(false);
-        setaDirecao.SetActive(false);
+        // 2. Avisa o goleiro para agir (se ele existir na cena atual)
+        LogicaGoleiro goleiro = FindFirstObjectByType<LogicaGoleiro>();
+        if (goleiro != null)
+        {
+            goleiro.DecidirAcaoGoleiro();
+        }
+
+        // 3. Aplica a física na bola
+        if (rbBola != null)
+        {
+            rbBola.linearVelocity = Vector2.zero; 
+            rbBola.angularVelocity = 0f;
+
+            // Calcula a direção baseada na seta (Vector2.up é o "frente" da seta)
+            Vector2 direcaoFinal = setaDirecao.transform.up; 
+            rbBola.AddForce(direcaoFinal * (valorForca * multiplicadorForca), ForceMode2D.Impulse);
+        }
+
+        // 4. Limpa a UI e reseta estado
+        if (barraForca != null) barraForca.gameObject.SetActive(false);
+        if (setaDirecao != null) setaDirecao.SetActive(false);
         estadoAtual = EstadoChute.Parado;
+    }
+
+    public void AtualizarUITentativas()
+    {
+        if (textoTentativas != null)
+        {
+            textoTentativas.text = "Tentativas:" + tentativasRestantes;
+        }
+    }
+
+    // Função útil para quando você muda de cena e quer dar mais chances ao jogador
+    public void ResetarTentativas(int quantidade)
+    {
+        tentativasRestantes = quantidade;
+        AtualizarUITentativas();
     }
 }

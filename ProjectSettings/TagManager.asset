@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Amigo
   - Inimigo
+  - Gol
+  - Trave
   layers:
   - Default
   - TransparentFX
