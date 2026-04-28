@@ -17,6 +17,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Jogo_Facil_1.unity
     guid: 1d74a7ce93605db4aa0865177c9887ea
+  - enabled: 1
+    path: Assets/Scenes/Jogo_Facil_2.unity
+    guid: 582fc480b32426d46afcc2d905d33d64
+  - enabled: 1
+    path: Assets/Scenes/Jogo_Facil_3.unity
+    guid: 7f3f29ecb8bf92542be140633452f7cf
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

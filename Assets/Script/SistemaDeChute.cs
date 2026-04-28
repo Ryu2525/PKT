@@ -2,10 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
+using System;
 
 public class SistemaDeChute : MonoBehaviour
 {
-    public enum EstadoChute { Parado, EscolhendoForca, EscolhendoDirecao }
+    public TextMeshProUGUI textoTentativas; // Adicione esta linha novamente
+    // Evento que avisa a Bicicleta e o Goleiro que o chute ocorreu
+    public static event Action AoConfirmarChute;
+
+    public enum EstadoChute { Parado, EscolhendoForca, EscolhendoDirecao, BolaEmMovimento }
     
     [Header("Estado Atual")]
     public EstadoChute estadoAtual = EstadoChute.Parado;
@@ -28,23 +33,29 @@ public class SistemaDeChute : MonoBehaviour
     public float multiplicadorForca = 15f;
 
     [Header("Regras e UI")]
-    public int tentativasRestantes = 3;
-    public TextMeshProUGUI textoTentativas;
+    // Referência ao gerenciador para não duplicar a lógica de tentativas
+    private GerenciadorPartida gerenciador;
     public Animator meuAnimator;
 
     void Start()
     {
+        gerenciador = FindFirstObjectByType<GerenciadorPartida>();
+
         // Inicializa a UI
         if (barraForca != null) barraForca.gameObject.SetActive(false);
         if (setaDirecao != null) setaDirecao.SetActive(false);
-        
-        AtualizarUITentativas();
+
+        // Se você ainda quiser usar o texto pelo script de chute:
+        if (gerenciador != null && textoTentativas != null)
+        {
+            textoTentativas.text = "Tentativas:" + gerenciador.tentativas;
+        }
     }
 
     void Update()
     {
         // Detecta o clique ou espaço
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (Keyboard.current.spaceKey.wasPressedThisFrame || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame))
         {
             AvancarEstado();
         }
@@ -65,7 +76,8 @@ public class SistemaDeChute : MonoBehaviour
         switch (estadoAtual)
         {
             case EstadoChute.Parado:
-                if (tentativasRestantes > 0)
+                // Só começa se ainda houver tentativas no Gerenciador
+                if (gerenciador != null && gerenciador.tentativas > 0)
                 {
                     estadoAtual = EstadoChute.EscolhendoForca;
                     if (barraForca != null) barraForca.gameObject.SetActive(true);
@@ -107,51 +119,30 @@ public class SistemaDeChute : MonoBehaviour
 
     void ExecutarChute()
     {
-        tentativasRestantes--;
-        AtualizarUITentativas();
+        // 1. DISPARA O EVENTO (Isso faz a Bicicleta e o Goleiro funcionarem!)
+        AoConfirmarChute?.Invoke();
 
-        // 1. Aciona a animação do jogador
+        // 2. Aciona a animação do jogador (Animator)
         if (meuAnimator != null) 
         {
             meuAnimator.SetTrigger("DispararChute");
         }
 
-        // 2. Avisa o goleiro para agir (se ele existir na cena atual)
-        LogicaGoleiro goleiro = FindFirstObjectByType<LogicaGoleiro>();
-        if (goleiro != null)
-        {
-            goleiro.DecidirAcaoGoleiro();
-        }
-
-        // 3. Aplica a física na bola
+        // 3. Aplica a física na bola para ela voar
         if (rbBola != null)
         {
             rbBola.linearVelocity = Vector2.zero; 
             rbBola.angularVelocity = 0f;
 
-            // Calcula a direção baseada na seta (Vector2.up é o "frente" da seta)
+            // Calcula a direção baseada na seta
             Vector2 direcaoFinal = setaDirecao.transform.up; 
             rbBola.AddForce(direcaoFinal * (valorForca * multiplicadorForca), ForceMode2D.Impulse);
         }
 
-        // 4. Limpa a UI e reseta estado
+        // 4. Limpa a UI e muda estado para não chutar duas vezes a mesma bola
         if (barraForca != null) barraForca.gameObject.SetActive(false);
         if (setaDirecao != null) setaDirecao.SetActive(false);
-        estadoAtual = EstadoChute.Parado;
-    }
-
-    public void AtualizarUITentativas()
-    {
-        if (textoTentativas != null)
-        {
-            textoTentativas.text = "Tentativas:" + tentativasRestantes;
-        }
-    }
-
-    // Função útil para quando você muda de cena e quer dar mais chances ao jogador
-    public void ResetarTentativas(int quantidade)
-    {
-        tentativasRestantes = quantidade;
-        AtualizarUITentativas();
+        
+        estadoAtual = EstadoChute.BolaEmMovimento;
     }
 }

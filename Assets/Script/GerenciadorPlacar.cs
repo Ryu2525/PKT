@@ -26,4 +26,10 @@ public class GerenciadorPlacar : MonoBehaviour
         if (textoPlacar != null)
             textoPlacar.text = golsTimeA + " x " + golsTimeB;
     }
+
+    public bool JogadorEstaGanhando()
+    {
+        // Retorna verdadeiro se o Time A (jogador) tiver mais gols que o B
+        return golsTimeA > golsTimeB;
+    }
 }

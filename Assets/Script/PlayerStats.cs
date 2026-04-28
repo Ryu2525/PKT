@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.SceneManagement; // Adicionado para carregar cenas
+using UnityEngine.SceneManagement;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -18,103 +18,36 @@ public class PlayerStats : MonoBehaviour
     public TextMeshProUGUI textoVitorias;
     public TextMeshProUGUI textoPartidasContador;
 
-    private int dinheiroAtual = 50;
-    private int nivelAtual = 1;
-    private int vitoriasNoCiclo = 0;
-    private int partidasJogadas = 0; 
-    private string timeAtual = "União Vila Nova FC";
-    private int ciclosFracassados = 0; 
+    void Start() 
+    { 
+        // Quando o Hub carregar, ele pega os dados globais atualizados
+        AtualizarTudo(); 
+    }
 
-    private float nivelFelicidade = 0.5f;
-    private float nivelFama = 0.5f;
-    private float nivelMoralTreinador = 0.5f;
-    private float nivelMoralApostador = 0.5f;
-
-    void Start() { AtualizarTudo(); }
-
-    // Chamado pelo botão "CONFIRMAR" no HUB
     public void JogarProximaPartida()
     {
-        string dificuldade = (nivelAtual == 1) ? "Facil" : (nivelAtual == 2) ? "Medio" : "Dificil";
-        int rodada = partidasJogadas + 1;
+        // Pega o nível atual lá dos Dados Globais
+        string dificuldade = (DadosDoJogador.nivelAtual == 1) ? "Facil" : (DadosDoJogador.nivelAtual == 2) ? "Medio" : "Dificil";
         
-        // Certifique-se de que suas cenas no Build Settings tenham esses nomes exatos
+        int rodada = DadosDoJogador.partidasJogadas + 1;
+        
         SceneManager.LoadScene("Jogo_" + dificuldade + "_" + rodada);
-    }
-
-    public void FinalizarPartida(bool venceu)
-    {
-        if (venceu) vitoriasNoCiclo++;
-        
-        partidasJogadas++;
-
-        // Se terminou a 3ª partida (índice 2 que virou 3)
-        if (partidasJogadas >= 3)
-        {
-            ConcluirCicloDePartidas();
-        }
-
-        AtualizarTudo();
-    }
-
-    void ConcluirCicloDePartidas()
-    {
-        if (vitoriasNoCiclo >= 2)
-        {
-            SubirDeNivel();
-            ciclosFracassados = 0;
-        }
-        else
-        {
-            ciclosFracassados++;
-            if (ciclosFracassados >= 2) ProcessarFracassoCritico();
-        }
-
-        partidasJogadas = 0;
-        vitoriasNoCiclo = 0;
-    }
-
-    void SubirDeNivel()
-    {
-        if (nivelAtual < 3)
-        {
-            nivelAtual++;
-            AtualizarDadosDoTime();
-        }
-    }
-
-    void ProcessarFracassoCritico()
-    {
-        if (nivelAtual == 1) SceneManager.LoadScene("GameOver"); 
-        else
-        {
-            nivelAtual--;
-            ciclosFracassados = 0;
-            AtualizarDadosDoTime();
-        }
-    }
-
-    void AtualizarDadosDoTime()
-    {
-        if (nivelAtual == 1) timeAtual = "União Vila Nova FC";
-        else if (nivelAtual == 2) timeAtual = "Atlético Vale Verde";
-        else if (nivelAtual == 3) timeAtual = "Esporte Clube Aurora Paulista";
     }
 
     void AtualizarTudo()
     {
-        if (textoDinheiro != null) textoDinheiro.text = "R$ " + dinheiroAtual;
-        if (textoNomeTime != null) textoNomeTime.text = timeAtual;
-        if (textoNivel != null) textoNivel.text = "NÍVEL: " + nivelAtual;
-        if (textoVitorias != null) textoVitorias.text = "Vitorias: " + vitoriasNoCiclo;
+        // Lê tudo diretamente de DadosDoJogador
+        if (textoDinheiro != null) textoDinheiro.text = "R$ " + DadosDoJogador.dinheiroAtual;
+        if (textoNomeTime != null) textoNomeTime.text = DadosDoJogador.timeAtual;
+        if (textoNivel != null) textoNivel.text = "NÍVEL: " + DadosDoJogador.nivelAtual;
+        if (textoVitorias != null) textoVitorias.text = "Vitorias: " + DadosDoJogador.vitoriasNoCiclo;
         
-        // EXIBIÇÃO: Mostra 1/3, 2/3 ou 3/3 para o jogador
         if (textoPartidasContador != null) 
-            textoPartidasContador.text = (partidasJogadas + 1) + "/3";
+            textoPartidasContador.text = (DadosDoJogador.partidasJogadas + 1) + "/3";
 
-        if (Felicidade != null) Felicidade.fillAmount = nivelFelicidade;
-        if (Fama != null) Fama.fillAmount = nivelFama;
-        if (MoralTreinador != null) MoralTreinador.fillAmount = nivelMoralTreinador;
-        if (MoralApostador != null) MoralApostador.fillAmount = nivelMoralApostador;
+        if (Felicidade != null) Felicidade.fillAmount = DadosDoJogador.nivelFelicidade;
+        if (Fama != null) Fama.fillAmount = DadosDoJogador.nivelFama;
+        if (MoralTreinador != null) MoralTreinador.fillAmount = DadosDoJogador.nivelMoralTreinador;
+        if (MoralApostador != null) MoralApostador.fillAmount = DadosDoJogador.nivelMoralApostador;
     }
 }
