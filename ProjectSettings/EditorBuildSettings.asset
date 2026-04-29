@@ -23,6 +23,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Jogo_Facil_3.unity
     guid: 7f3f29ecb8bf92542be140633452f7cf
+  - enabled: 1
+    path: Assets/Scenes/PrePartida.unity
+    guid: 9b09350cd6b641f44a8d43bae9cab00d
+  - enabled: 1
+    path: Assets/Scenes/ResultadoPartida.unity
+    guid: 7e253e17e5be0ff4682c85f01a10b290
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

@@ -18,36 +18,72 @@ public class PlayerStats : MonoBehaviour
     public TextMeshProUGUI textoVitorias;
     public TextMeshProUGUI textoPartidasContador;
 
-    void Start() 
-    { 
-        // Quando o Hub carregar, ele pega os dados globais atualizados
-        AtualizarTudo(); 
+    void Start()
+    {
+        DadosDoJogador.AtualizarDadosDoTime();
+        DadosDoJogador.LimitarBarras();
+
+        AtualizarTudo();
     }
 
     public void JogarProximaPartida()
     {
-        // Pega o nível atual lá dos Dados Globais
-        string dificuldade = (DadosDoJogador.nivelAtual == 1) ? "Facil" : (DadosDoJogador.nivelAtual == 2) ? "Medio" : "Dificil";
-        
-        int rodada = DadosDoJogador.partidasJogadas + 1;
-        
-        SceneManager.LoadScene("Jogo_" + dificuldade + "_" + rodada);
+        // Agora o Hub leva para a tela de pré-partida.
+        // A pré-partida decide se vai carregar Jogo_Facil, Jogo_Medio ou Jogo_Dificil.
+        SceneManager.LoadScene("PrePartida");
+    }
+
+    public void FinalizarPartida(bool venceu)
+    {
+        DadosDoJogador.RegistrarResultado(venceu);
+        AtualizarTudo();
     }
 
     void AtualizarTudo()
     {
-        // Lê tudo diretamente de DadosDoJogador
-        if (textoDinheiro != null) textoDinheiro.text = "R$ " + DadosDoJogador.dinheiroAtual;
-        if (textoNomeTime != null) textoNomeTime.text = DadosDoJogador.timeAtual;
-        if (textoNivel != null) textoNivel.text = "NÍVEL: " + DadosDoJogador.nivelAtual;
-        if (textoVitorias != null) textoVitorias.text = "Vitorias: " + DadosDoJogador.vitoriasNoCiclo;
-        
-        if (textoPartidasContador != null) 
-            textoPartidasContador.text = (DadosDoJogador.partidasJogadas + 1) + "/3";
+        if (textoDinheiro != null)
+        {
+            textoDinheiro.text = "R$ " + DadosDoJogador.DinheiroAtual;
+        }
 
-        if (Felicidade != null) Felicidade.fillAmount = DadosDoJogador.nivelFelicidade;
-        if (Fama != null) Fama.fillAmount = DadosDoJogador.nivelFama;
-        if (MoralTreinador != null) MoralTreinador.fillAmount = DadosDoJogador.nivelMoralTreinador;
-        if (MoralApostador != null) MoralApostador.fillAmount = DadosDoJogador.nivelMoralApostador;
+        if (textoNomeTime != null)
+        {
+            textoNomeTime.text = DadosDoJogador.TimeAtual;
+        }
+
+        if (textoNivel != null)
+        {
+            textoNivel.text = "NÍVEL: " + DadosDoJogador.NivelAtual;
+        }
+
+        if (textoVitorias != null)
+        {
+            textoVitorias.text = "Vitorias: " + DadosDoJogador.VitoriasNoCiclo;
+        }
+
+        if (textoPartidasContador != null)
+        {
+            textoPartidasContador.text = (DadosDoJogador.PartidasJogadas + 1) + "/3";
+        }
+
+        if (Felicidade != null)
+        {
+            Felicidade.fillAmount = DadosDoJogador.Felicidade;
+        }
+
+        if (Fama != null)
+        {
+            Fama.fillAmount = DadosDoJogador.Fama;
+        }
+
+        if (MoralTreinador != null)
+        {
+            MoralTreinador.fillAmount = DadosDoJogador.MoralTreinador;
+        }
+
+        if (MoralApostador != null)
+        {
+            MoralApostador.fillAmount = DadosDoJogador.MoralApostador;
+        }
     }
 }

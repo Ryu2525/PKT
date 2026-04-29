@@ -3,93 +3,185 @@ using UnityEngine.SceneManagement;
 
 public static class DadosDoJogador
 {
-// ADICIONE ESTA LINHA PARA CORRIGIR OS ERROS:
-    public static Sprite PersonagemSelecionado; 
+    // =========================
+    // DADOS DO PERSONAGEM
+    // =========================
 
-    // As outras variáveis que já tínhamos:
-    public static int dinheiroAtual = 50;
-    public static int nivelAtual = 1;
-    public static int vitoriasNoCiclo = 0;
-    public static int partidasJogadas = 0; 
-    public static string timeAtual = "União Vila Nova FC";
-    public static int ciclosFracassados = 0; 
+    public static Sprite PersonagemSelecionado;
+    public static string NomeJogador = "Jogador 1";
 
-    public static float nivelFelicidade = 0.5f;
-    public static float nivelFama = 0.5f;
-    public static float nivelMoralTreinador = 0.5f;
-    public static float nivelMoralApostador = 0.5f;
 
-    // Lógica movida para cá para poder ser chamada direto do jogo
+    // =========================
+    // DADOS DA CARREIRA
+    // =========================
+
+
+    public static bool CicloFinalizado = false;
+
+    public static bool CicloVencido = false;
+    public static int DinheiroAtual = 50;
+    public static int NivelAtual = 1;
+    public static int VitoriasNoCiclo = 0;
+    public static int PartidasJogadas = 0;
+    public static string TimeAtual = "União Vila Nova FC";
+    public static int CiclosFracassados = 0;
+
+
+    // =========================
+    // BARRAS DO JOGADOR
+    // =========================
+
+    public static float Felicidade = 0.5f;
+    public static float Fama = 0.5f;
+    public static float MoralTreinador = 0.5f;
+    public static float MoralApostador = 0.5f;
+
+
+    // =========================
+    // OBJETIVO DA PRÉ-PARTIDA
+    // =========================
+
+    public static string ObjetivoEscolhido = "";
+    public static string TipoObjetivo = "";
+    public static string AcaoObjetivo = "";
+
+    public static int RecompensaObjetivo = 0;
+    public static int QuantidadeNecessaria = 0;
+
+    public static float ImpactoPositivoObjetivo = 0f;
+    public static float PenalidadeObjetivo = 0f;
+    public static float PenalidadeTreinadorExtra = 0f;  
+
+    // =========================
+    // RESULTADO DA ÚLTIMA PARTIDA
+    // =========================
+
+    public static bool UltimoObjetivoCumprido = false;
+    public static bool UltimaPartidaVencida = false;
+
+    public static string UltimaDificuldade = "";
+    public static int UltimoDinheiroGanho = 0;
+    public static string UltimoBonusRisco = "Não incluído";
+
+    public static float FelicidadeAntes = 0f;
+    public static float FelicidadeDepois = 0f;
+
+    public static float FamaAntes = 0f;
+    public static float FamaDepois = 0f;
+
+    public static float MoralTreinadorAntes = 0f;
+    public static float MoralTreinadorDepois = 0f;
+
+    public static float MoralApostadorAntes = 0f;
+    public static float MoralApostadorDepois = 0f;
+
+
+    // =========================
+    // REGISTRO DE RESULTADO
+    // =========================
+
     public static void RegistrarResultado(bool venceu)
     {
-        if (venceu) 
+        CicloFinalizado = false;
+        CicloVencido = false;
+
+        if (venceu)
         {
-            vitoriasNoCiclo++;
-            // Exemplo: Aumenta fama e felicidade na vitória
-            nivelFama = Mathf.Clamp(nivelFama + 0.1f, 0f, 1f);
-            nivelFelicidade = Mathf.Clamp(nivelFelicidade + 0.1f, 0f, 1f);
+            VitoriasNoCiclo++;
+
+            Fama = Mathf.Clamp01(Fama + 0.1f);
+            Felicidade = Mathf.Clamp01(Felicidade + 0.1f);
         }
         else
         {
-            // Exemplo: Diminui felicidade e moral no erro
-            nivelFelicidade = Mathf.Clamp(nivelFelicidade - 0.1f, 0f, 1f);
-            nivelMoralTreinador = Mathf.Clamp(nivelMoralTreinador - 0.1f, 0f, 1f);
+            Felicidade = Mathf.Clamp01(Felicidade - 0.1f);
+            MoralTreinador = Mathf.Clamp01(MoralTreinador - 0.1f);
         }
-        
-        partidasJogadas++;
 
-        // Se terminou a 3ª partida
-        if (partidasJogadas >= 3)
+        PartidasJogadas++;
+
+        if (PartidasJogadas >= 3)
         {
             ConcluirCicloDePartidas();
         }
+
+        AtualizarDadosDoTime();
+        LimitarBarras();
     }
 
     private static void ConcluirCicloDePartidas()
     {
-        if (vitoriasNoCiclo >= 2)
+        CicloFinalizado = true;
+
+        if (VitoriasNoCiclo >= 2)
         {
-            SubirDeNivel();
-            ciclosFracassados = 0;
+            CicloVencido = true;
+
+            if (NivelAtual < 3)
+            {
+                SubirDeNivel();
+            }
+            else
+            {
+                Debug.Log("Jogador concluiu o último nível.");
+            }
         }
         else
         {
-            ciclosFracassados++;
-            if (ciclosFracassados >= 2) ProcessarFracassoCritico();
+            CicloVencido = false;
+            Debug.Log("Jogador perdeu o ciclo.");
         }
 
-        // Reseta o ciclo para as próximas 3 partidas
-        partidasJogadas = 0;
-        vitoriasNoCiclo = 0;
+        PartidasJogadas = 0;
+        VitoriasNoCiclo = 0;
+
+        AtualizarDadosDoTime();
     }
 
     private static void SubirDeNivel()
     {
-        if (nivelAtual < 3)
+        if (NivelAtual < 3)
         {
-            nivelAtual++;
+            NivelAtual++;
             AtualizarDadosDoTime();
         }
     }
 
     private static void ProcessarFracassoCritico()
     {
-        if (nivelAtual == 1) 
+        if (NivelAtual == 1)
         {
-            SceneManager.LoadScene("GameOver"); 
+            SceneManager.LoadScene("GameOver");
         }
         else
         {
-            nivelAtual--;
-            ciclosFracassados = 0;
+            NivelAtual--;
+            CiclosFracassados = 0;
             AtualizarDadosDoTime();
         }
     }
 
-    private static void AtualizarDadosDoTime()
+    public static void AtualizarDadosDoTime()
     {
-        if (nivelAtual == 1) timeAtual = "União Vila Nova FC";
-        else if (nivelAtual == 2) timeAtual = "Atlético Vale Verde";
-        else if (nivelAtual == 3) timeAtual = "Esporte Clube Aurora Paulista";
+        if (NivelAtual == 1)
+        {
+            TimeAtual = "União Vila Nova FC";
+        }
+        else if (NivelAtual == 2)
+        {
+            TimeAtual = "Atlético Vale Verde";
+        }
+        else if (NivelAtual == 3)
+        {
+            TimeAtual = "Esporte Clube Aurora Paulista";
+        }
+    }
+
+    public static void LimitarBarras()
+    {
+        Felicidade = Mathf.Clamp01(Felicidade);
+        Fama = Mathf.Clamp01(Fama);
+        MoralTreinador = Mathf.Clamp01(MoralTreinador);
+        MoralApostador = Mathf.Clamp01(MoralApostador);
     }
 }

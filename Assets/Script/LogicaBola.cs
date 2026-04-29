@@ -23,18 +23,23 @@ public class LogicaBola : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        // Busca o gerenciador na cena (Unity 6 usa FindFirstObjectByType)
+
+        // Unity 6 usa FindFirstObjectByType
         gerenciador = FindFirstObjectByType<GerenciadorPartida>();
-        
+
         ConfigurarEtapa(0);
     }
 
     void Update()
     {
-        // VERIFICAÇÃO DE LIMITE: Se a bola sair da área visível, reseta.
+        // Se a bola sair da área visível, considera chute para fora.
         if (Mathf.Abs(transform.position.x) > limiteX || Mathf.Abs(transform.position.y) > limiteY)
         {
-            if (gerenciador != null) gerenciador.ErrouChute();
+            if (gerenciador != null)
+            {
+                gerenciador.RegistrarChuteParaFora();
+            }
+
             ResetarBolaPosicao();
         }
     }
@@ -46,8 +51,11 @@ public class LogicaBola : MonoBehaviour
         // 1. BATEU NA TRAVE
         if (colisor.gameObject.CompareTag("Trave"))
         {
-            // ---> ADICIONE ESTA LINHA AQUI <---
-            if (gerenciador != null) gerenciador.ErrouChute();
+            if (gerenciador != null)
+            {
+                gerenciador.ErrouChute();
+            }
+
             StartCoroutine(EfeitoTrave());
             return;
         }
@@ -55,32 +63,62 @@ public class LogicaBola : MonoBehaviour
         // 2. MARCOU GOL
         if (colisor.gameObject.CompareTag("Gol"))
         {
-            if (gerenciador != null) gerenciador.MarcouGol();
+            if (gerenciador != null)
+            {
+                gerenciador.MarcouGol();
+            }
 
-            // Se ainda houver etapas (ex: gol da virada), avança.
+            // Se ainda houver etapas, avança para a próxima.
             if (etapaAtualIndice + 1 < etapasDaPartida.Length)
             {
                 StartCoroutine(EsperarParaProximaEtapa());
             }
             else
             {
-                // Se era o último gol, finaliza a partida.
-                if (gerenciador != null) gerenciador.FinalizarJogoManualmente();
+                // Se era o último gol/última etapa, finaliza a partida.
+                if (gerenciador != null)
+                {
+                    gerenciador.FinalizarJogoManualmente();
+                }
             }
+
             return;
         }
 
-        // 3. BATEU NO AMIGO (PASSE)
+        // 3. BATEU NO AMIGO
         if (colisor.gameObject.CompareTag("Amigo"))
         {
+            if (gerenciador != null)
+            {
+                gerenciador.RegistrarAssistencia();
+            }
+
             AvancarEtapa();
+            return;
         }
 
-        // 4. BATEU NO INIMIGO OU GOLEIRO (ERRO)
-        else if (colisor.gameObject.CompareTag("Inimigo") || colisor.gameObject.CompareTag("Goleiro"))
+        // 4. BATEU NO INIMIGO
+        if (colisor.gameObject.CompareTag("Inimigo"))
         {
-            if (gerenciador != null) gerenciador.ErrouChute();
+            if (gerenciador != null)
+            {
+                gerenciador.RegistrarBatidaInimigo();
+            }
+
             ResetarBolaPosicao();
+            return;
+        }
+
+        // 5. BATEU NO GOLEIRO
+        if (colisor.gameObject.CompareTag("Goleiro"))
+        {
+            if (gerenciador != null)
+            {
+                gerenciador.RegistrarBatidaGoleiro();
+            }
+
+            ResetarBolaPosicao();
+            return;
         }
     }
 
@@ -89,20 +127,22 @@ public class LogicaBola : MonoBehaviour
     void ConfigurarEtapa(int indice)
     {
         if (etapasDaPartida.Length == 0) return;
+
         etapaAtualIndice = indice;
 
-        // Ativa apenas a 'fatia' do campo correta
+        // Ativa apenas a etapa correta da partida.
         for (int i = 0; i < etapasDaPartida.Length; i++)
         {
             etapasDaPartida[i].SetActive(i == etapaAtualIndice);
         }
 
-        // Atualiza onde a bola deve nascer nesta etapa
+        // Define onde a bola nasce nessa etapa.
         if (indice < posicoesIniciaisPorEtapa.Length)
+        {
             posicaoInicialAtual = posicoesIniciaisPorEtapa[indice];
+        }
 
-        // ---> AQUI ESTÁ A SOLUÇÃO DAS TENTATIVAS <---
-        // Quando muda de etapa (ex: de passe para chute), ele reseta para 3 vidas!
+        // Quando muda de etapa, reseta as tentativas.
         if (gerenciador != null)
         {
             gerenciador.ResetarTentativas();
@@ -113,31 +153,52 @@ public class LogicaBola : MonoBehaviour
 
     void AvancarEtapa()
     {
-        ConfigurarEtapa(etapaAtualIndice + 1);
+        if (etapaAtualIndice + 1 < etapasDaPartida.Length)
+        {
+            ConfigurarEtapa(etapaAtualIndice + 1);
+        }
     }
 
     public void ResetarBolaPosicao()
     {
-        rb.linearVelocity = Vector2.zero;
-        rb.angularVelocity = 0f;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+
         transform.position = posicaoInicialAtual;
-        
-        // Avisa o sistema de clique/chute que ele pode atirar de novo
+
+        // Libera o sistema de chute para novo chute.
         SistemaDeChute chute = FindFirstObjectByType<SistemaDeChute>();
-        if (chute != null) chute.estadoAtual = SistemaDeChute.EstadoChute.Parado;
+
+        if (chute != null)
+        {
+            chute.estadoAtual = SistemaDeChute.EstadoChute.Parado;
+        }
 
         LogicaGoleiro goleiro = FindFirstObjectByType<LogicaGoleiro>();
-        if (goleiro != null) goleiro.ResetarGoleiro();
+
+        if (goleiro != null)
+        {
+            goleiro.ResetarGoleiro();
+        }
     }
 
-    // --- CORROTINAS (TEMPO) ---
+    // --- CORROTINAS ---
 
     IEnumerator EfeitoTrave()
     {
-        pausada = true; 
-        rb.linearVelocity = Vector2.zero;
-        rb.angularVelocity = 0f;
-        yield return new WaitForSeconds(0.8f); 
+        pausada = true;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+
+        yield return new WaitForSeconds(0.8f);
+
         pausada = false;
         ResetarBolaPosicao();
     }
@@ -145,9 +206,15 @@ public class LogicaBola : MonoBehaviour
     IEnumerator EsperarParaProximaEtapa()
     {
         pausada = true;
-        rb.linearVelocity = Vector2.zero;
-        rb.angularVelocity = 0f;
-        yield return new WaitForSeconds(1.2f); // Tempo da comemoração
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+
+        yield return new WaitForSeconds(1.2f);
+
         pausada = false;
         AvancarEtapa();
     }
