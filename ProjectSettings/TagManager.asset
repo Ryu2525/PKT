@@ -9,6 +9,7 @@ TagManager:
   - Gol
   - Trave
   - Bola
+  - Goleiro
   layers:
   - Default
   - TransparentFX
